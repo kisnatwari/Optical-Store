@@ -15,24 +15,20 @@ class CartController extends Controller
     public function index()
     {
 
-        if(!auth()->user())
-            {
-             $itemsincart = 0;
-            }
-            else{
-                $itemsincart = Cart::where('user_id',auth()->user()->id)->where('is_ordered',false)->count();
-            }
-        
-       
+        if (!auth()->user()) {
+            $itemsincart = 0;
+        } else {
+            $itemsincart = Cart::where('user_id', auth()->user()->id)->where('is_ordered', false)->count();
+        }
+
+
         $categories = Category::orderBy('priority')->get();
-        $carts = Cart::where('user_id',auth()->user()->id)->where('is_ordered',false)->get();
-        $product=Product::all();
-        foreach($carts as $cart)
-        {
+        $carts = Cart::where('user_id', auth()->user()->id)->where('is_ordered', false)->get();
+        $product = Product::all();
+        foreach ($carts as $cart) {
             $prd = Product::find($cart->product_id);
             //product stock is less than cart ko qty 
-            if($prd->stock < $cart->qty)
-            {
+            if ($prd->stock < $cart->qty) {
                 $cc = Cart::find($cart->id);
                 //make cart qty equal to product stock
                 //product ko stock jati xa teti naii cart maa available hunu paryo.
@@ -40,7 +36,7 @@ class CartController extends Controller
                 $cc->save();
             }
         }
-        return view('viewcart',compact('carts','categories','itemsincart','product'));
+        return view('viewcart', compact('carts', 'categories', 'itemsincart', 'product'));
     }
 
     /**
@@ -64,14 +60,13 @@ class CartController extends Controller
         $data['user_id'] = auth()->user()->id;
 
         //check if already exist
-        $check = Cart::where('product_id',$data['product_id'])->where('user_id',$data['user_id'])->where('is_ordered',false)->count();
-        if($check > 0)
-        {
-            return back()->with('success','Item already in Cart');
+        $check = Cart::where('product_id', $data['product_id'])->where('user_id', $data['user_id'])->where('is_ordered', false)->count();
+        if ($check > 0) {
+            return back()->with('success', 'Item already in Cart');
         }
 
         Cart::create($data);
-        return back()->with('success','Item added to Cart');
+        return back()->with('success', 'Item added to Cart');
     }
 
     /**
@@ -113,12 +108,12 @@ class CartController extends Controller
         $cart = Cart::find($id);
         $data = $request->validate([
             'qty' => 'required',
-            
+
         ]);
 
-       
+
         $cart->update($data);
-        return back()->with('success','Cart updated successfully!');
+        return back()->with('success', 'Cart updated successfully!');
     }
 
 
@@ -128,14 +123,15 @@ class CartController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function delete($id){
-        $cart=Cart::find($id);
+    public function delete($id)
+    {
+        $cart = Cart::find($id);
         $cart->delete();
-        return Redirect(route('cart.index'))->with('success','Item Deleted Sucessfully!');;
-        }
+        return Redirect(route('cart.index'))->with('success', 'Item Deleted Sucessfully!');;
+    }
 
 
-        public function checkout()
+    /*         public function checkout()
         {
            
             if(!auth()->user())
@@ -148,12 +144,30 @@ class CartController extends Controller
             $categories = Category::orderBy('priority')->get();
            
             return view('checkout',compact('categories','itemsincart'));
+        } */
+
+
+    public function checkout()
+    {
+        $itemsInCart = [];
+        $originalCartTotal = 0;
+        if (auth()->user()) {
+            $itemsincart = Cart::where('user_id', auth()->user()->id)->where('is_ordered', false)->count();
+            $itemsInCart = Cart::where('user_id', auth()->user()->id)
+                ->where('is_ordered', false)
+                ->with('product') // Make sure to eager load the related product data
+                ->get();
+
+            foreach ($itemsInCart as $item) {
+                $originalCartTotal += $item->product->price * $item->qty;
+            }
         }
 
+        $categories = Category::orderBy('priority')->get();
 
-
-
-
+        return view('checkout', compact('categories', 'itemsincart', 'itemsInCart', 'originalCartTotal'));
+    }
+    
 }
 
 

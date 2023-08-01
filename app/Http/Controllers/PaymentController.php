@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 
 class PaymentController extends Controller
 {
-    public function khaltiverifiy(Request $request)
+    public function khaltiverify(Request $request)
     {
        
         $args = http_build_query(array(
